@@ -1,3 +1,4 @@
+import Button from "@mui/material/Button"
 import {
   Link,
   RootRoute,
@@ -5,62 +6,89 @@ import {
   Router,
   RouterProvider,
   useParams,
-} from "@tanstack/react-router";
+  useNavigate,
+} from "@tanstack/react-router"
 
-const rootRoute = new RootRoute();
+import { z } from "zod"
+
+// Define a schema for the search params of the blog route
+const blogSearchSchema = z.object({
+  page: z.number().optional(),
+})
+
+// If we need to use the schema in other places, we can define a type for it
+// type BlogSearch = z.infer<typeof blogSearchSchema>;
+
+const rootRoute = new RootRoute()
 const indexRoute = new Route({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: () => (
-    <div>
-      <h1>Index</h1>
+  component: () => {
+    const navigate = useNavigate()
+
+    return (
       <div>
-        <Link to="blog">To Blog index</Link>
-      </div>
-      <div>
-        <Link to="blog/$slug" params={{ slug: "my-slug" }}>
-          To blog/my-slug
+        <h1>Index</h1>
+
+        {/* Usage of MaterialUI Button */}
+        <Link to="blog">
+          <Button>To blog index</Button>
         </Link>
+
+        <div>
+          <Link to="blog/$slug" params={{ slug: "my-slug" }}>
+            To blog/my-slug
+          </Link>
+        </div>
+
+        {/* Usage of `navigate` for button */}
+        <button onClick={() => navigate({ to: "/blog", search: { page: 1 } })}>
+          Button navigates to blog route
+        </button>
       </div>
-    </div>
-  ),
-});
+    )
+  },
+})
 
 const blogRoute = new Route({
   getParentRoute: () => rootRoute,
   path: "/blog",
-});
+  validateSearch: (search) => {
+    return blogSearchSchema.parse(search)
+  },
+})
 const blogIndexRoute = new Route({
   getParentRoute: () => blogRoute,
   path: "/",
   component: () => <h1>Blog Index</h1>,
-});
+})
 
 const postRoute = new Route({
   getParentRoute: () => blogRoute,
   path: "$slug",
   component: () => {
-    const { slug } = useParams();
+    // Get the slug param from the URL
+    const { slug } = useParams()
 
-    return <h1>Blog Post: {slug}</h1>;
+    return <h1>Blog Post: {slug}</h1>
   },
-});
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   blogRoute.addChildren([blogIndexRoute, postRoute]),
-]);
+])
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: typeof router;
+    router: typeof router
   }
 }
 
-const router = new Router({ routeTree: routeTree });
+const router = new Router({ routeTree: routeTree })
 
 function App() {
-  return <RouterProvider router={router} />;
+  return <RouterProvider router={router} />
 }
 
-export default App;
+export default App
